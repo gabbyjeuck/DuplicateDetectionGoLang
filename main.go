@@ -65,7 +65,8 @@ func loadFiles(filename []string) error {
 
 	}
 	wg.Wait()
-
+	fmt.Println("All files have been scanned! Program will terminate in 15 seconds, have an awesome day!")
+	time.Sleep(time.Duration(rand.Intn(15)) * time.Second)
 	return nil
 }
 
@@ -83,6 +84,8 @@ func loadData(data [][]string, currentFileName string, wg *sync.WaitGroup) {
 				codeExistsMap[code] = val
 				fmt.Printf("\nDuplicate exists for ID: %v\nOriginal Filename: %s\nCurrent File: %v \n", code, val, currentFileName)
 				time.Sleep(time.Duration(rand.Intn(3)) * time.Second)
+				fmt.Println("Duplicate was detected, do you wish to continue? Y = Continue; N = Exit")
+				getUserInput()
 			} else {
 				codeExistsMap[code] = currentFileName
 				continue
@@ -90,6 +93,30 @@ func loadData(data [][]string, currentFileName string, wg *sync.WaitGroup) {
 		}
 	}
 
+}
+
+// Prompts for user input to continue scanning or to exit program.
+func getUserInput() {
+	var userInput string
+	invalidInput := true
+	for invalidInput {
+		fmt.Scanln(&userInput)
+
+		switch userInput {
+		case "Y", "y":
+			invalidInput = false
+			continue
+		case "N", "n":
+			fmt.Println("You chose to exit.  Program is closing.")
+			invalidInput = false
+			os.Exit(1)
+			break
+		default:
+			fmt.Println("Invalid response, please type Y or N.")
+			invalidInput = true
+			break
+		}
+	}
 }
 
 // Understanding Golang's parallelism features / common golang library functions/interaces.
