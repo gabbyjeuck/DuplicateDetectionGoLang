@@ -39,7 +39,7 @@ func getfileNames() []string {
 	return files
 }
 
-// Load each of the data files
+// Load each of the data files.
 func loadFiles(filename []string) error {
 	wg := new(sync.WaitGroup)
 
