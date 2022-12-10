@@ -4,16 +4,16 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 )
 
-type dataFileNames struct {
-	name string
-}
+var codeExistsMap = make(map[string]string)
 
 // Get filenames
-
 func getfileNames() []string {
 	var files []string
 	dataDir := "data/"
@@ -39,11 +39,12 @@ func getfileNames() []string {
 	return files
 }
 
-// Open the data files
+// Load each of the data files
 func loadFiles(filename []string) error {
-	var code string
-	codeExistsMap := make(map[string]bool)
+	wg := new(sync.WaitGroup)
+
 	for _, f := range filename {
+		wg.Add(1)
 		csvFile, err := os.Open(f)
 		if err != nil {
 			fmt.Println(err)
@@ -53,7 +54,6 @@ func loadFiles(filename []string) error {
 		defer csvFile.Close()
 
 		csvReader := csv.NewReader(csvFile)
-
 		csvRawData, err := csvReader.ReadAll()
 
 		if err != nil {
@@ -61,22 +61,35 @@ func loadFiles(filename []string) error {
 			os.Exit(1)
 		}
 
-		for i, c := range csvRawData {
-			code = c[1]
+		go loadData(csvRawData, f, wg)
 
-			if i > 0 {
-				if val, exist := codeExistsMap[code]; exist {
-					codeExistsMap[code] = val
-					fmt.Printf("Duplicate exists on row %v \n", code)
+	}
+	wg.Wait()
 
-				} else {
-					codeExistsMap[code] = val
-					continue
-				}
+	return nil
+}
+
+// Load data for each file and validate whether duplicate id exists
+func loadData(data [][]string, currentFileName string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var code string
+
+	for i, c := range data {
+		code = c[1]
+
+		if i > 0 {
+			// See if existing key for code exists and display original/current filenames where detected.
+			if val, exist := codeExistsMap[code]; exist {
+				codeExistsMap[code] = val
+				fmt.Printf("\nDuplicate exists for ID: %v\nOriginal Filename: %s\nCurrent File: %v \n", code, val, currentFileName)
+				time.Sleep(time.Duration(rand.Intn(3)) * time.Second)
+			} else {
+				codeExistsMap[code] = currentFileName
+				continue
 			}
 		}
 	}
-	return nil
+
 }
 
 // Understanding Golang's parallelism features / common golang library functions/interaces.
